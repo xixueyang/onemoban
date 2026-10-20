@@ -4,7 +4,143 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
   <title>横屏专属 · 星球碰撞</title>
-  <link rel="stylesheet" href="style/style.css" />
+  <style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html, body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: #0f172a;
+  font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+}
+
+/* 横屏内容区 */
+.landscape-content {
+  width: 100%;
+  height: 100%;
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: #e2e8f0;
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+}
+
+/* ===== 星球碰撞舞台 ===== */
+.planet-stage {
+  position: relative;
+  width: 100%;
+  height: 60%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+.planet {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 130px;
+  height: 130px;
+  margin: -65px 0 0 -65px;
+  border-radius: 50%;
+}
+/* 左侧星球（蓝） */
+.planet--left {
+  background: radial-gradient(circle at 35% 30%, #7dd3fc, #0369a1 70%);
+  box-shadow: inset -18px -18px 40px rgba(0, 0, 0, .55), 0 0 40px rgba(56, 189, 248, .35);
+  transform: translateX(-65vw);
+}
+/* 右侧星球（红） */
+.planet--right {
+  background: radial-gradient(circle at 65% 30%, #fca5a5, #b91c1c 70%);
+  box-shadow: inset 18px -18px 40px rgba(0, 0, 0, .55), 0 0 40px rgba(248, 113, 113, .35);
+  transform: translateX(65vw);
+}
+/* 碰撞冲击波 */
+.shockwave {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 20px;
+  height: 20px;
+  margin: -10px 0 0 -10px;
+  border-radius: 50%;
+  border: 3px solid rgba(255, 255, 255, .85);
+  opacity: 0;
+  transform: scale(0);
+}
+
+/* 触发动画：横屏 1 秒后由 JS 添加 .playing */
+.playing .planet--left { animation: flyLeft 1.3s cubic-bezier(.45, .05, .25, 1) forwards; }
+.playing .planet--right { animation: flyRight 1.3s cubic-bezier(.45, .05, .25, 1) forwards; }
+.playing .shockwave { animation: shock 0.9s ease-out 2.25s forwards; }
+
+/* 飞入并在中间微微挤压碰撞 */
+@keyframes flyLeft {
+  0%   { transform: translateX(-65vw); }
+  80%  { transform: translateX(-72px); }
+  90%  { transform: translateX(-58px); }
+  100% { transform: translateX(-66px); }
+}
+@keyframes flyRight {
+  0%   { transform: translateX(65vw); }
+  80%  { transform: translateX(72px); }
+  90%  { transform: translateX(58px); }
+  100% { transform: translateX(66px); }
+}
+/* 两星球半径 65px，中心间距 132px = 恰好相切碰撞 */
+@keyframes shock {
+  0%   { opacity: .9; transform: scale(0); }
+  100% { opacity: 0;  transform: scale(14); }
+}
+
+.caption {
+  margin-top: 24px;
+  font-size: 18px;
+  letter-spacing: 2px;
+  color: #94a3b8;
+}
+
+/* ===== 竖屏提示遮罩 ===== */
+.rotate-tip {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+  color: #f8fafc;
+  text-align: center;
+  padding: 24px;
+}
+.rotate-tip .phone-icon {
+  width: 72px;
+  height: 72px;
+  margin-bottom: 24px;
+  animation: rotateHint 2s ease-in-out infinite;
+}
+.rotate-tip p { font-size: 18px; line-height: 1.6; }
+.rotate-tip .sub { margin-top: 8px; font-size: 14px; color: #94a3b8; }
+
+@keyframes rotateHint {
+  0%, 100% { transform: rotate(0deg); }
+  50% { transform: rotate(-90deg); }
+}
+
+/* 竖屏隐藏内容、显示提示 */
+@media screen and (orientation: portrait) {
+  .rotate-tip { display: flex; }
+  .landscape-content { display: none; }
+}
+@media screen and (orientation: landscape) {
+  .rotate-tip { display: none; }
+  .landscape-content { display: flex; }
+}
+  </style>
 </head>
 <body>
   <!-- 竖屏提示 -->
@@ -27,6 +163,58 @@
     <div class="caption">星轨交汇 · 横屏体验</div>
   </div>
 
-  <script src="style/main.js"></script>
+  <script>
+/*
+ * 横竖屏检测 + 横屏 1 秒后触发星球碰撞动画
+ */
+(function () {
+  var stage = document.getElementById('planetStage')
+  var tip = document.querySelector('.rotate-tip')
+  var content = document.querySelector('.landscape-content')
+  var timer = null
+
+  // 横屏：1 秒后播放星球碰撞
+  function startCollision() {
+    if (!stage) return
+    // 先移除，强制重排以便重复进入横屏时能重新播放
+    stage.classList.remove('playing')
+    void stage.offsetWidth
+    if (timer) clearTimeout(timer)
+    timer = setTimeout(function () {
+      stage.classList.add('playing')
+    }, 1000)
+  }
+
+  // 竖屏：停止并复位
+  function stopCollision() {
+    if (timer) {
+      clearTimeout(timer)
+      timer = null
+    }
+    if (stage) stage.classList.remove('playing')
+  }
+
+  function checkOrientation() {
+    var isPortrait = window.innerHeight > window.innerWidth
+    // 仅在明显是手机尺寸时强制提示，避免桌面窄窗口误拦
+    var isSmallScreen = Math.min(window.innerWidth, window.innerHeight) < 600
+    if (isPortrait && isSmallScreen) {
+      tip.style.display = 'flex'
+      content.style.display = 'none'
+      stopCollision()
+    } else {
+      tip.style.display = 'none'
+      content.style.display = 'flex'
+      startCollision()
+    }
+  }
+
+  window.addEventListener('orientationchange', function () {
+    setTimeout(checkOrientation, 300)
+  })
+  window.addEventListener('resize', checkOrientation)
+  checkOrientation()
+})()
+  </script>
 </body>
 </html>
