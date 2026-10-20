@@ -3,72 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-  <title>横屏专属页面</title>
-  <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-
-    html, body {
-      width: 100%;
-      height: 100%;
-      overflow: hidden;
-      background: #0f172a;
-      font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
-    }
-
-    /* 横屏内容区 */
-    .landscape-content {
-      width: 100%;
-      height: 100%;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      color: #e2e8f0;
-      padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
-    }
-    .landscape-content h1 { font-size: 32px; margin-bottom: 16px; }
-    .landscape-content p { font-size: 16px; color: #94a3b8; }
-
-    /* 竖屏提示遮罩（默认隐藏，竖屏时显示） */
-    .rotate-tip {
-      position: fixed;
-      inset: 0;
-      z-index: 9999;
-      display: none;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
-      color: #f8fafc;
-      text-align: center;
-      padding: 24px;
-    }
-    .rotate-tip .phone-icon {
-      width: 72px;
-      height: 72px;
-      margin-bottom: 24px;
-      animation: rotateHint 2s ease-in-out infinite;
-    }
-    .rotate-tip p { font-size: 18px; line-height: 1.6; }
-    .rotate-tip .sub { margin-top: 8px; font-size: 14px; color: #94a3b8; }
-
-    @keyframes rotateHint {
-      0%, 100% { transform: rotate(0deg); }
-      50% { transform: rotate(-90deg); }
-    }
-
-    /* ===== 竖屏时显示遮罩，隐藏内容 ===== */
-    /* 竖屏：宽度 < 高度，且为手持设备 */
-    @media screen and (orientation: portrait) {
-      .rotate-tip { display: flex; }
-      .landscape-content { display: none; }
-    }
-    /* 横屏：正常显示内容 */
-    @media screen and (orientation: landscape) {
-      .rotate-tip { display: none; }
-      .landscape-content { display: flex; }
-    }
-  </style>
+  <title>横屏专属 · 星球碰撞</title>
+  <link rel="stylesheet" href="style/style.css" />
 </head>
 <body>
   <!-- 竖屏提示 -->
@@ -83,35 +19,14 @@
 
   <!-- 横屏内容 -->
   <div class="landscape-content">
-    <h1>欢迎使用横屏模式</h1>
-    <p>当前为横屏视图，可在此放置需要宽屏展示的内容（如游戏、数据看板、视频等）。</p>
+    <div class="planet-stage" id="planetStage">
+      <div class="planet planet--left"></div>
+      <div class="planet planet--right"></div>
+      <div class="shockwave"></div>
+    </div>
+    <div class="caption">星轨交汇 · 横屏体验</div>
   </div>
 
-  <script>
-    // 兜底：部分旧安卓机型 orientation 媒体查询不及时，用 JS 再次确认
-    (function () {
-      var tip = document.querySelector('.rotate-tip');
-      var content = document.querySelector('.landscape-content');
-
-      function checkOrientation() {
-        var isPortrait = window.innerHeight > window.innerWidth;
-        // 仅在明显是手机尺寸时强制提示（避免桌面窗口变窄也提示）
-        var isSmallScreen = Math.min(window.innerWidth, window.innerHeight) < 600;
-        if (isPortrait && isSmallScreen) {
-          tip.style.display = 'flex';
-          content.style.display = 'none';
-        } else {
-          tip.style.display = 'none';
-          content.style.display = 'flex';
-        }
-      }
-
-      window.addEventListener('orientationchange', function () {
-        setTimeout(checkOrientation, 300);
-      });
-      window.addEventListener('resize', checkOrientation);
-      checkOrientation();
-    })();
-  </script>
+  <script src="style/main.js"></script>
 </body>
 </html>
