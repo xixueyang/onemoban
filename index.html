@@ -2,8 +2,8 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-  <title>横屏专属 · 星球碰撞</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>星球碰撞</title>
   <style>
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -15,21 +15,20 @@ html, body {
   font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
 }
 
-/* 横屏内容区（底色纯黑） */
+/* ===== 内容区（电脑端固定横屏布局，不做横竖屏判断） ===== */
 .landscape-content {
   position: relative;
   width: 100%;
   height: 100%;
-  display: none;
+  display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   background: #000;
   color: #e2e8f0;
-  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
 }
 
-/* ===== 白色开场模块：横屏后显示，1 秒后淡出消失 ===== */
+/* ===== 白色开场模块：页面加载先显示，1 秒后淡出消失 ===== */
 .intro-panel {
   position: absolute;
   inset: 0;
@@ -103,7 +102,7 @@ html, body {
   transform: scale(0);
 }
 
-/* 触发动画：横屏 1 秒后由 JS 添加 .playing */
+/* 触发动画：页面加载 1 秒后由 JS 添加 .playing */
 .playing .planet--left { animation: flyLeft 1.3s cubic-bezier(.45, .05, .25, 1) forwards; }
 .playing .planet--right { animation: flyRight 1.3s cubic-bezier(.45, .05, .25, 1) forwards; }
 .playing .shockwave { animation: shock 0.9s ease-out 2.25s forwards; }
@@ -133,60 +132,12 @@ html, body {
   letter-spacing: 2px;
   color: #94a3b8;
 }
-
-/* ===== 竖屏提示遮罩 ===== */
-.rotate-tip {
-  position: fixed;
-  inset: 0;
-  z-index: 9999;
-  display: none;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  background: linear-gradient(135deg, #000000 0%, #0b1220 100%);
-  color: #f8fafc;
-  text-align: center;
-  padding: 24px;
-}
-.rotate-tip .phone-icon {
-  width: 72px;
-  height: 72px;
-  margin-bottom: 24px;
-  animation: rotateHint 2s ease-in-out infinite;
-}
-.rotate-tip p { font-size: 18px; line-height: 1.6; }
-.rotate-tip .sub { margin-top: 8px; font-size: 14px; color: #94a3b8; }
-
-@keyframes rotateHint {
-  0%, 100% { transform: rotate(0deg); }
-  50% { transform: rotate(-90deg); }
-}
-
-/* 竖屏隐藏内容、显示提示 */
-@media screen and (orientation: portrait) {
-  .rotate-tip { display: flex; }
-  .landscape-content { display: none; }
-}
-@media screen and (orientation: landscape) {
-  .rotate-tip { display: none; }
-  .landscape-content { display: flex; }
-}
   </style>
 </head>
 <body>
-  <!-- 竖屏提示 -->
-  <div class="rotate-tip">
-    <svg class="phone-icon" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-      <rect x="6" y="2" width="12" height="20" rx="2" ry="2"></rect>
-      <line x1="11" y1="18" x2="13" y2="18"></line>
-    </svg>
-    <p>请将手机横屏使用</p>
-    <p class="sub">Rotate your device to landscape</p>
-  </div>
-
-  <!-- 横屏内容 -->
+  <!-- 电脑端内容（固定横屏布局） -->
   <div class="landscape-content">
-    <!-- 白色开场模块（横屏 1 秒后消失） -->
+    <!-- 白色开场模块（加载 1 秒后消失） -->
     <div class="intro-panel" id="introPanel">
       <div class="intro-title">星轨交汇</div>
       <div class="intro-sub">LANDSCAPE EXPERIENCE</div>
@@ -201,48 +152,23 @@ html, body {
 
   <script>
 /*
- * 横竖屏检测 + 横屏 1 秒后触发星球碰撞动画
- * 显隐完全由 CSS @media (orientation) 控制，这里只用 matchMedia 监听真实方向来触发动画。
+ * 电脑端专用：页面加载后先显示开场画面，1 秒后淡出并播放星球碰撞动画。
+ * 不做横竖屏判断（去掉了 orientation 媒体查询和 resize 重启动画，
+ * 避免电脑上窗口变窄时被"请横屏"遮罩挡住、拖动窗口时动画反复重启）。
  */
 (function () {
   var stage = document.getElementById('planetStage')
   var intro = document.getElementById('introPanel')
-  var mql = window.matchMedia('(orientation: landscape)')
-  var timer = null
 
-  // 横屏：白色模块显示 1 秒后淡出，同时播放星球相撞
-  function startCollision() {
-    if (!stage) return
-    // 先复位，强制重排以便重复进入横屏时能重新播放
-    stage.classList.remove('playing')
-    if (intro) intro.classList.remove('is-hidden')
-    void stage.offsetWidth
-    if (timer) clearTimeout(timer)
-    timer = setTimeout(function () {
-      if (intro) intro.classList.add('is-hidden')
-      stage.classList.add('playing')
-    }, 1000)
-  }
+  // 先复位（隐藏播放标记，开场画面回到可见），强制重排后延迟 1 秒触发
+  stage.classList.remove('playing')
+  intro.classList.remove('is-hidden')
+  void stage.offsetWidth
 
-  // 竖屏：停止并复位（白色模块恢复显示，星球回到初始位置）
-  function stopCollision() {
-    if (timer) {
-      clearTimeout(timer)
-      timer = null
-    }
-    if (stage) stage.classList.remove('playing')
-    if (intro) intro.classList.remove('is-hidden')
-  }
-
-  function check() {
-    if (mql.matches) startCollision()
-    else stopCollision()
-  }
-
-  if (mql.addEventListener) mql.addEventListener('change', check)
-  else if (mql.addListener) mql.addListener(check)
-  window.addEventListener('resize', check)
-  check()
+  setTimeout(function () {
+    intro.classList.add('is-hidden')
+    stage.classList.add('playing')
+  }, 1000)
 })()
   </script>
 </body>
