@@ -252,6 +252,83 @@
   #muteBtn.on{animation:pulseMusic 2.4s ease-in-out infinite;}
   @keyframes pulseMusic{0%,100%{box-shadow:0 0 0 0 rgba(95,227,220,.28);}50%{box-shadow:0 0 0 7px rgba(95,227,220,0);}}
   body.rotd #muteBtn{top:2.4vh;left:2.4vh;right:auto;}
+
+  /* 结尾页小游戏入口 */
+  .ending-games{display:flex;gap:1.2vw;margin-top:1.2vw;flex-wrap:wrap;}
+  .ending-games button{
+    padding:0.7vw 1.6vw;border-radius:999px;cursor:pointer;
+    background:rgba(95,227,220,.10);color:#b8f0ec;
+    border:1px solid rgba(95,227,220,.45);font-size:clamp(10px,2.6vw,13px);
+    font-family:inherit;letter-spacing:.05em;transition:.2s;
+    -webkit-tap-highlight-color:transparent;
+  }
+  .ending-games button:active{transform:scale(.96);background:rgba(95,227,220,.22);}
+
+  /* 游戏层通用 */
+  #gameStars, #gameTarot{
+    background:radial-gradient(ellipse at center,#0a1a2b 0%,#050b14 100%);
+    flex-direction:column;align-items:center;justify-content:center;gap:1.2vh;
+    z-index:80;
+  }
+  #starsCv{position:absolute;inset:0;width:100%;height:100%;}
+  .game-hud{
+    position:absolute;top:2vh;left:2vw;right:2vw;
+    display:flex;justify-content:space-between;color:#9fe8e2;
+    font-size:clamp(11px,2.6vw,14px);z-index:2;
+  }
+  .game-msg{
+    position:absolute;top:18vh;left:50%;transform:translateX(-50%);
+    color:#fff;font-size:clamp(14px,3.4vw,18px);text-shadow:0 0 12px rgba(95,227,220,.6);
+    z-index:2;opacity:0;transition:opacity .3s;pointer-events:none;
+  }
+  .game-msg.show{opacity:1;}
+  .game-close{
+    position:absolute;top:2vh;right:2vw;width:32px;height:32px;border-radius:50%;
+    background:rgba(10,26,38,.6);border:1px solid rgba(120,220,220,.35);color:#9fe8e2;
+    font-size:14px;cursor:pointer;z-index:3;
+  }
+
+  /* 塔罗 */
+  .tarot-title{color:#9fe8e2;font-size:clamp(14px,3.4vw,18px);letter-spacing:.3em;}
+  .tarot-stage{perspective:900px;}
+  .tarot-card{
+    width:clamp(110px,26vh,170px);height:clamp(170px,40vh,260px);
+    position:relative;cursor:pointer;transform-style:preserve-3d;
+  }
+  .tarot-card .inner{
+    width:100%;height:100%;position:relative;
+    transform-style:preserve-3d;transition:transform .7s cubic-bezier(.2,.8,.2,1);
+  }
+  .tarot-card.flipped .inner{transform:rotateY(180deg);}
+  .tarot-card .face{
+    position:absolute;inset:0;border-radius:10px;
+    backface-visibility:hidden;-webkit-backface-visibility:hidden;
+    display:flex;align-items:center;justify-content:center;
+    border:1px solid rgba(159,232,226,.5);
+  }
+  .tarot-card .back{
+    background:
+      radial-gradient(circle at 30% 30%, rgba(95,227,220,.25), transparent 60%),
+      linear-gradient(135deg,#10283f,#1b1030);
+    color:rgba(159,232,226,.7);font-size:42px;
+  }
+  .tarot-card .front{
+    background:linear-gradient(160deg,#f6e8d8,#d9b8c8);
+    transform:rotateY(180deg);
+  }
+  .tarot-card .front .icon{font-size:clamp(54px,16vh,96px);filter:drop-shadow(0 4px 12px rgba(0,0,0,.25));}
+  .tarot-name{color:#ffe9c8;font-size:clamp(12px,3vw,15px);letter-spacing:.2em;min-height:1.4em;text-align:center;}
+  .tarot-mean{
+    color:rgba(232,244,246,.85);font-size:clamp(10px,2.6vw,13px);
+    max-width:60vw;text-align:center;line-height:1.6;min-height:2.6em;padding:0 4vw;
+  }
+  .tarot-btns{display:flex;gap:1.5vw;margin-top:1vh;}
+  .tarot-btns button{
+    padding:0.8vh 2vw;border-radius:999px;cursor:pointer;
+    background:rgba(255,168,203,.15);color:#ffd1e5;border:1px solid rgba(255,168,203,.5);
+    font-size:clamp(10px,2.6vw,13px);font-family:inherit;
+  }
+  .tarot-btns button:active{transform:scale(.96);}
 </style>
 </head>
 <body>
@@ -301,6 +378,38 @@
     <h2 class="ending-title">我的自我介绍</h2>
     <div class="groups" id="groups"></div>
     <div class="ending-foot">THE END · 很高兴遇见你</div>
+    <div class="ending-games">
+      <button id="openStars">🌠 捡星星</button>
+      <button id="openTarot">🔮 今日塔罗</button>
+    </div>
+  </div>
+</section>
+
+<section id="gameStars" class="layer hidden">
+  <canvas id="starsCv"></canvas>
+  <div class="game-hud">
+    <div class="hud-score">得分 <b id="starsScore">0</b></div>
+    <div class="hud-time"><b id="starsTime">15</b>s</div>
+  </div>
+  <div class="game-msg" id="starsMsg"></div>
+  <button class="game-close" data-close>✕</button>
+</section>
+
+<section id="gameTarot" class="layer hidden">
+  <div class="tarot-title">今日塔罗</div>
+  <div class="tarot-stage">
+    <div class="tarot-card" id="tarotCard">
+      <div class="inner">
+        <div class="face back">?</div>
+        <div class="face front"><span class="icon" id="tarotIcon">?</span></div>
+      </div>
+    </div>
+  </div>
+  <div class="tarot-name" id="tarotName">点下面按钮抽一张</div>
+  <div class="tarot-mean" id="tarotMean"></div>
+  <div class="tarot-btns">
+    <button id="tarotDraw">洗牌 · 抽一张</button>
+    <button class="game-close" data-close>返回</button>
   </div>
 </section>
 
@@ -1714,6 +1823,211 @@ phaseT0 = nowMs();
 requestAnimationFrame(loop);
 
 setTimeout(()=>{ hintEl.classList.add('gone'); }, HINT_MS);
+
+/* =========================================================
+   9. 小游戏：捡星星 + 今日塔罗
+   ========================================================= */
+const gameStarsEl = document.getElementById('gameStars');
+const gameTarotEl = document.getElementById('gameTarot');
+const starsCv = document.getElementById('starsCv');
+const starsCtx = starsCv.getContext('2d');
+const starsScoreEl = document.getElementById('starsScore');
+const starsTimeEl = document.getElementById('starsTime');
+const starsMsgEl = document.getElementById('starsMsg');
+const openStarsBtn = document.getElementById('openStars');
+const openTarotBtn = document.getElementById('openTarot');
+
+let starsGame = null;
+let moveDir = 0;
+
+function closeAllGames(){
+  gameStarsEl.classList.add('hidden');
+  gameTarotEl.classList.add('hidden');
+  if (starsGame){ cancelAnimationFrame(starsGame.raf); starsGame = null; }
+}
+document.querySelectorAll('[data-close]').forEach(btn=>{
+  btn.addEventListener('click', (e)=>{ e.stopPropagation(); closeAllGames(); });
+});
+
+/* 横屏旋转后的坐标换算：local 坐标 ↔ 视觉坐标 */
+function gameDims(){
+  const rotd = document.body.classList.contains('rotd');
+  return {
+    rotd,
+    vW: rotd ? starsCv.clientHeight : starsCv.clientWidth,
+    vH: rotd ? starsCv.clientWidth  : starsCv.clientHeight
+  };
+}
+function toCanvas(vx, vy){
+  const rotd = document.body.classList.contains('rotd');
+  if (rotd) return { x: vy, y: starsCv.clientHeight - vx };
+  return { x: vx, y: vy };
+}
+function resizeStars(){
+  const dpr = window.devicePixelRatio || 1;
+  starsCv.width = starsCv.clientWidth * dpr;
+  starsCv.height = starsCv.clientHeight * dpr;
+  starsCtx.setTransform(dpr,0,0,dpr,0,0);
+}
+function drawStar(ctx, x, y, r){
+  ctx.beginPath();
+  for (let i=0;i<5;i++){
+    const a = -Math.PI/2 + i*Math.PI*2/5;
+    const a2 = a + Math.PI/5;
+    ctx.lineTo(x + Math.cos(a)*r, y + Math.sin(a)*r);
+    ctx.lineTo(x + Math.cos(a2)*r*0.45, y + Math.sin(a2)*r*0.45);
+  }
+  ctx.closePath();
+  ctx.fill();
+}
+
+openStarsBtn.addEventListener('click', (e)=>{
+  e.stopPropagation();
+  closeAllGames();
+  gameStarsEl.classList.remove('hidden');
+  requestAnimationFrame(()=> gameStarsEl.classList.add('show'));
+  resizeStars();
+  const { vW, vH } = gameDims();
+  starsGame = {
+    vx: vW/2, items: [], score: 0, lives: 3,
+    timeLeft: 15, lastSpawn: 0,
+    lastT: performance.now(), raf: 0, over: false
+  };
+  starsScoreEl.textContent = '0';
+  starsTimeEl.textContent = '15';
+  starsMsgEl.classList.remove('show');
+  loopStars();
+});
+
+starsCv.addEventListener('pointerdown', (e)=>{
+  const rect = starsCv.getBoundingClientRect();
+  moveDir = (e.clientX - rect.left) > rect.width/2 ? 1 : -1;
+});
+window.addEventListener('pointerup', ()=> moveDir = 0);
+window.addEventListener('pointercancel', ()=> moveDir = 0);
+
+function loopStars(){
+  if (!starsGame) return;
+  const g = starsGame;
+  const now = performance.now();
+  const dt = Math.min(0.05, (now - g.lastT)/1000);
+  g.lastT = now;
+  const { vW, vH } = gameDims();
+
+  g.vx += moveDir * 420 * dt;
+  g.vx = Math.max(28, Math.min(vW - 28, g.vx));
+
+  g.lastSpawn += dt;
+  if (g.lastSpawn > 0.55){
+    g.lastSpawn = 0;
+    g.items.push({
+      vx: 30 + Math.random()*(vW-60), vy: -10,
+      vySpeed: 110 + Math.random()*120,
+      r: 5 + Math.random()*3,
+      pink: Math.random() < 0.3
+    });
+  }
+
+  const catchY = vH - 44;
+  g.items = g.items.filter(it=>{
+    it.vy += it.vySpeed * dt;
+    if (Math.abs(it.vy - catchY) < 20 && Math.abs(it.vx - g.vx) < 34){
+      g.score++;
+      starsScoreEl.textContent = g.score;
+      blip(1200 + Math.random()*400, 0.08, 'sine', 0.2);
+      return false;
+    }
+    if (it.vy > vH + 10){
+      g.lives--;
+      if (g.lives <= 0) endStars();
+      return false;
+    }
+    return true;
+  });
+
+  g.timeLeft -= dt;
+  starsTimeEl.textContent = Math.max(0, Math.ceil(g.timeLeft));
+  if (g.timeLeft <= 0) endStars();
+
+  starsCtx.clearRect(0,0,starsCv.clientWidth, starsCv.clientHeight);
+  for (const it of g.items){
+    const c = toCanvas(it.vx, it.vy);
+    starsCtx.fillStyle = it.pink ? 'rgba(255,168,203,.95)' : 'rgba(159,232,226,.95)';
+    drawStar(starsCtx, c.x, c.y, it.r);
+  }
+  const p = toCanvas(g.vx, catchY);
+  starsCtx.fillStyle = '#f7ddcb';
+  starsCtx.fillRect(p.x - 9, p.y - 18, 18, 16);
+  starsCtx.fillStyle = '#7c98a6';
+  starsCtx.fillRect(p.x - 10, p.y - 26, 20, 9);
+  starsCtx.fillStyle = '#1b1d24';
+  starsCtx.fillRect(p.x - 8, p.y - 2, 16, 4);
+
+  if (!g.over) g.raf = requestAnimationFrame(loopStars);
+}
+
+function endStars(){
+  if (!starsGame || starsGame.over) return;
+  starsGame.over = true;
+  const g = starsGame;
+  starsMsgEl.textContent = `结束 · 接到 ${g.score} 颗星星 ✨`;
+  starsMsgEl.classList.add('show');
+  setTimeout(()=>{
+    cancelAnimationFrame(g.raf);
+    starsGame = null;
+    gameStarsEl.classList.add('hidden');
+  }, 1800);
+}
+
+/* ---- 今日塔罗 ---- */
+const TAROT = [
+  { name:'星星 ★',     icon:'⭐', mean:'你偷偷在做的那件小事，宇宙都看着呢，再坚持一下。' },
+  { name:'太阳 ☀️',    icon:'☀️', mean:'今天适合把喜欢的东西分享出去，会收到让你笑出来的回应。' },
+  { name:'月亮 🌙',    icon:'🌙', mean:'想不通的事先睡一觉，明早醒来答案会自己浮出来。' },
+  { name:'力量 💪',    icon:'💪', mean:'你比自己想的更扛得住，今天可以答应那件一直拖着的事。' },
+  { name:'命运之轮 🎡', icon:'🎡', mean:'绕了很久的事这周会有转机，留意一条迟到的消息。' },
+  { name:'恋人 💗',    icon:'💗', mean:'做选择时，选那个让你心跳快半拍的那个。' },
+  { name:'愚人 🃏',    icon:'🃏', mean:'允许自己今天做点没用的事，发呆也是充电。' },
+  { name:'女祭司 🔮',  icon:'🔮', mean:'相信你的第一直觉，它比你以为的准很多。' },
+  { name:'节制 🍵',    icon:'🍵', mean:'把一杯水、一顿饭都慢下来，今天的好运藏在细节里。' },
+  { name:'世界 🌍',    icon:'🌍', mean:'一件事要圆满了，记得给自己一个小奖励。' },
+  { name:'魔术师 🪄',  icon:'🪄', mean:'你手上的工具已经够用了，缺的只是开始那一下。' },
+  { name:'高塔 ⚡',    icon:'⚡', mean:'旧的壳会碎一下，碎完才腾得出位置给新的。' }
+];
+const tarotCard = document.getElementById('tarotCard');
+const tarotIcon = document.getElementById('tarotIcon');
+const tarotName = document.getElementById('tarotName');
+const tarotMean = document.getElementById('tarotMean');
+const tarotDrawBtn = document.getElementById('tarotDraw');
+let lastTarotIdx = -1;
+
+openTarotBtn.addEventListener('click', (e)=>{
+  e.stopPropagation();
+  closeAllGames();
+  gameTarotEl.classList.remove('hidden');
+  requestAnimationFrame(()=> gameTarotEl.classList.add('show'));
+  tarotCard.classList.remove('flipped');
+  tarotIcon.textContent = '?';
+  tarotName.textContent = '点下面按钮抽一张';
+  tarotMean.textContent = '';
+});
+
+tarotDrawBtn.addEventListener('click', (e)=>{
+  e.stopPropagation();
+  let idx;
+  do { idx = Math.floor(Math.random()*TAROT.length); } while (idx === lastTarotIdx && TAROT.length > 1);
+  lastTarotIdx = idx;
+  const card = TAROT[idx];
+  tarotCard.classList.remove('flipped');
+  tarotMean.textContent = '';
+  tarotName.textContent = '· ' + card.name + ' ·';
+  setTimeout(()=>{
+    tarotIcon.textContent = card.icon;
+    tarotCard.classList.add('flipped');
+    tarotMean.textContent = card.mean;
+    blip(520, 0.2, 'triangle', 0.2);
+  }, 280);
+});
 
 })();
 </script>
