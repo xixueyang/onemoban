@@ -253,8 +253,11 @@
   @keyframes pulseMusic{0%,100%{box-shadow:0 0 0 0 rgba(95,227,220,.28);}50%{box-shadow:0 0 0 7px rgba(95,227,220,0);}}
   body.rotd #muteBtn{top:2.4vh;left:2.4vh;right:auto;}
 
-  /* 结尾页小游戏入口 */
-  .ending-games{display:flex;gap:1.2vw;margin-top:1.2vw;flex-wrap:wrap;}
+  /* 结尾页小游戏入口：浮动在右下角，不占自我介绍文档流 */
+  .ending-games{
+    position:absolute;right:2.2vh;bottom:2.2vh;z-index:5;
+    display:flex;gap:1.2vw;flex-wrap:wrap;justify-content:flex-end;
+  }
   .ending-games button{
     padding:0.7vw 1.6vw;border-radius:999px;cursor:pointer;
     background:rgba(95,227,220,.10);color:#b8f0ec;
@@ -376,7 +379,7 @@
 
 <canvas id="space"></canvas>
 
-<audio id="bgm" loop preload="auto" playsinline></audio>
+<audio id="bgm" loop preload="auto" playsinline autoplay muted></audio>
 <button id="muteBtn" aria-label="背景音乐开关">♪</button>
 
 <div id="hint" class="layer">
@@ -419,10 +422,10 @@
     <h2 class="ending-title">我的自我介绍</h2>
     <div class="groups" id="groups"></div>
     <div class="ending-foot">THE END · 很高兴遇见你</div>
-    <div class="ending-games">
-      <button id="openStars">🌠 捡星星</button>
-      <button id="openTarot">🔮 今日塔罗</button>
-    </div>
+  </div>
+  <div class="ending-games">
+    <button id="openStars">🌠 捡星星</button>
+    <button id="openTarot">🔮 今日塔罗</button>
   </div>
 </section>
 
@@ -807,9 +810,23 @@ const bgmEl = document.getElementById('bgm');
 const muteBtn = document.getElementById('muteBtn');
 const BGM_LIST = ['music/faruxue.mp3', 'music/发如雪.mp3', 'music/bgm.mp3', 'bgm.mp3'];
 
-/* 页面一加载就开始预加载第一首背景音乐，这样第一次触摸时可以秒播 */
+/* 页面一加载就预加载 + 尝试自动播放（muted 自动播是浏览器允许的，播起来后立即尝试取消静音） */
 (function preloadBgm(){
-  try{ bgmEl.src = BGM_LIST[0]; bgmEl.preload = 'auto'; bgmEl.load(); }catch(e){}
+  try{
+    bgmEl.src = BGM_LIST[0];
+    bgmEl.preload = 'auto';
+    bgmEl.muted = true;
+    bgmEl.play().catch(()=>{});
+    /* 一旦开始播放，立即尝试取消静音并淡入到正常音量 */
+    bgmEl.addEventListener('play', ()=>{
+      setTimeout(()=>{ try{ bgmEl.muted = false; }catch(e){} }, 50);
+      if (!musicStarted){
+        musicStarted = true;
+        playBgm();
+        muteBtn.classList.add('on');
+      }
+    });
+  }catch(e){}
 })();
 
 function initAudio(){
@@ -953,11 +970,11 @@ function playBgm(){
   if (muted) return;
   try{
     bgmEl.muted = false;
-    bgmEl.volume = 0.001;
+    if (bgmEl.volume < 0.001) bgmEl.volume = 0.001;
   }catch(e){}
   const p = bgmEl.play();
   if (p && p.catch) p.catch(()=>{});
-  let v = 0;
+  let v = bgmEl.volume;
   const fade = setInterval(()=>{
     v += 0.06;
     try{ bgmEl.volume = Math.min(0.42, v); }catch(e){}
@@ -1002,7 +1019,15 @@ muteBtn.addEventListener('click', (ev)=>{
 window.addEventListener('pointerdown', ()=>{
   initAudio();
   try{
-    if (!musicStarted){
+    /* 兜底：无论自动播放是否成功，第一次触摸都确保 unmute 并淡入 */
+    if (bgmEl.muted){
+      bgmEl.muted = false;
+      if (!musicStarted){
+        musicStarted = true;
+        playBgm();
+        muteBtn.classList.add('on');
+      }
+    } else if (!musicStarted){
       musicStarted = true;
       playBgm();
       muteBtn.classList.add('on');
