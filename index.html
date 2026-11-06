@@ -237,11 +237,29 @@
     .groups{grid-template-columns:repeat(3,minmax(0,1fr));}
   }
   .hidden{display:none !important;}
+
+  /* 音乐开关 */
+  #muteBtn{
+    position:fixed;top:calc(env(safe-area-inset-top,0px) + 10px);right:12px;z-index:70;
+    width:36px;height:36px;border-radius:50%;border:1px solid rgba(120,220,220,.38);
+    background:rgba(8,22,33,.55);color:#9fe8e2;font-size:16px;line-height:1;
+    display:flex;align-items:center;justify-content:center;padding:0;
+    -webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);cursor:pointer;
+    transition:color .25s,border-color .25s,transform .2s;
+    font-family:inherit;-webkit-tap-highlight-color:transparent;
+  }
+  #muteBtn.off{color:#5f7c85;border-color:rgba(110,150,160,.22);}
+  #muteBtn.on{animation:pulseMusic 2.4s ease-in-out infinite;}
+  @keyframes pulseMusic{0%,100%{box-shadow:0 0 0 0 rgba(95,227,220,.28);}50%{box-shadow:0 0 0 7px rgba(95,227,220,0);}}
+  body.rotd #muteBtn{top:2.4vh;left:2.4vh;right:auto;}
 </style>
 </head>
 <body>
 
 <canvas id="space"></canvas>
+
+<audio id="bgm" loop preload="auto" playsinline></audio>
+<button id="muteBtn" aria-label="背景音乐开关">♪</button>
 
 <div id="hint" class="layer">
   <div class="hint-inner">
@@ -619,8 +637,85 @@ function enterTalk(){
   applyOrientation();
 }
 
+/* ===== 背景音乐 & 点击音效 ===== */
+let actx = null, muted = false, bgmStarted = false, bgmIdx = 0;
+const bgmEl = document.getElementById('bgm');
+const muteBtn = document.getElementById('muteBtn');
+const BGM_LIST = ['music/faruxue.mp3', 'music/发如雪.mp3', 'music/bgm.mp3', 'bgm.mp3'];
+
+function initAudio(){
+  try{
+    if (!actx) actx = new (window.AudioContext || window.webkitAudioContext)();
+    if (actx.state === 'suspended') actx.resume();
+  }catch(e){}
+}
+
+function blip(freq, dur, type, vol){
+  initAudio();
+  if (!actx || muted) return;
+  try{
+    const o = actx.createOscillator(), g = actx.createGain();
+    o.type = type || 'sine';
+    o.frequency.setValueAtTime(freq, actx.currentTime);
+    g.gain.setValueAtTime(0.0001, actx.currentTime);
+    g.gain.linearRampToValueAtTime(vol == null ? 0.08 : vol, actx.currentTime + 0.012);
+    g.gain.exponentialRampToValueAtTime(0.0001, actx.currentTime + dur);
+    o.connect(g); g.connect(actx.destination);
+    o.start(actx.currentTime);
+    o.stop(actx.currentTime + dur + 0.02);
+  }catch(e){}
+}
+
+function playBgm(){
+  if (muted) return;
+  try{ bgmEl.muted = false; bgmEl.volume = 0; }catch(e){}
+  const p = bgmEl.play();
+  if (p && p.catch) p.catch(()=>{});
+  let v = 0;
+  const fade = setInterval(()=>{
+    v += 0.045;
+    try{ bgmEl.volume = Math.min(0.52, v); }catch(e){}
+    if (v >= 0.52) clearInterval(fade);
+  }, 200);
+}
+
+function loadBgm(){
+  if (bgmIdx >= BGM_LIST.length) return;
+  bgmEl.src = BGM_LIST[bgmIdx];
+  try{ bgmEl.load(); }catch(e){}
+  playBgm();
+}
+
+bgmEl.addEventListener('error', ()=>{
+  bgmIdx++;
+  if (bgmIdx < BGM_LIST.length) loadBgm();
+});
+
+muteBtn.addEventListener('click', (ev)=>{
+  ev.stopPropagation();
+  muted = !muted;
+  muteBtn.classList.toggle('off', muted);
+  muteBtn.classList.toggle('on', !muted);
+  try{ bgmEl.muted = muted; }catch(e){}
+  if (!muted){
+    if (!bgmStarted){ bgmStarted = true; loadBgm(); }
+    else playBgm();
+    blip(740, 0.16, 'sine', 0.1);
+  }
+});
+
 window.addEventListener('pointerdown', ()=>{
-  if (phase === 'merge') enterTalk();
+  initAudio();
+  if (!bgmStarted){ bgmStarted = true; loadBgm(); muteBtn.classList.add('on'); }
+  if (phase === 'merge'){
+    blip(240, 0.22, 'triangle', 0.1);
+    blip(680, 0.30, 'sine', 0.06);
+    enterTalk();
+  } else if (phase === 'talk' || phase === 'ending'){
+    blip(920, 0.075, 'sine', 0.055);
+  } else {
+    blip(600, 0.06, 'sine', 0.04);
+  }
 }, { passive: true });
 
 /* =========================================================
