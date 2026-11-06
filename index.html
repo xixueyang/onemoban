@@ -396,14 +396,13 @@
   }
   .msg-wrap{
     flex:1;width:100%;height:100%;
-    background:linear-gradient(160deg,#14263a,#1e1432);
     display:flex;flex-direction:column;overflow:hidden;
   }
   .msg-head{
     padding:1.6vh 2.2vh;color:#ffe9c8;font-size:clamp(14px,2.6vh,17px);letter-spacing:.25em;
     display:flex;align-items:center;justify-content:space-between;
     border-bottom:1px solid rgba(255,220,180,.2);
-    background:rgba(255,220,180,.05);flex-shrink:0;
+    background:rgba(20,38,58,.95);flex-shrink:0;
   }
   .msg-wrap iframe{flex:1;width:100%;border:none;background:#fff;}
 
@@ -516,7 +515,6 @@
   </div>
 </section>
 
-<!-- 留言浮层已改为直接跳转链接
 <section id="msgLayer" class="layer hidden">
   <div class="msg-wrap">
     <div class="msg-head">
@@ -2294,7 +2292,8 @@ openTarotBtn.addEventListener('click', (e)=>{
 
 openMsgBtn.addEventListener('click', (e)=>{
   e.stopPropagation();
-  location.href = 'https://kp5j1yyw.jsjform.com/f/jBFsNv';
+  closeAllGames();
+  msgLayerEl.classList.remove('hidden');
 });
 
 tarotDrawBtn.addEventListener('click', (e)=>{
