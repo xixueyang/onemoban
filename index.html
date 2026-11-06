@@ -391,18 +391,21 @@
   }
   .tarot-btns button:active{transform:scale(.96);}
   /* 留言浮层 */
-  #msgLayer{background:rgba(5,11,20,.92);align-items:center;justify-content:center;}
+  #msgLayer{
+    background:#050b14;align-items:center;justify-content:center;z-index:90;
+  }
   .msg-wrap{
-    width:min(92vh,600px);height:82vh;
-    background:linear-gradient(160deg,rgba(20,38,58,.9),rgba(30,20,50,.85));
-    border:1px solid rgba(255,220,180,.25);border-radius:16px;
+    width:min(94vh,640px);height:84vh;
+    background:linear-gradient(160deg,#14263a,#1e1432);
+    border:1px solid rgba(255,220,180,.3);border-radius:18px;
     display:flex;flex-direction:column;overflow:hidden;
-    box-shadow:0 12px 40px rgba(0,0,0,.5);
+    box-shadow:0 16px 48px rgba(0,0,0,.6), 0 0 40px rgba(255,220,180,.08);
   }
   .msg-head{
-    padding:1.4vh 2vh;color:#ffe9c8;font-size:clamp(13px,2.4vh,16px);letter-spacing:.2em;
+    padding:1.6vh 2.2vh;color:#ffe9c8;font-size:clamp(14px,2.6vh,17px);letter-spacing:.25em;
     display:flex;align-items:center;justify-content:space-between;
-    border-bottom:1px solid rgba(255,220,180,.15);
+    border-bottom:1px solid rgba(255,220,180,.2);
+    background:rgba(255,220,180,.05);
   }
   .msg-wrap iframe{flex:1;width:100%;border:none;background:#fff;}
 
