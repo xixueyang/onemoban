@@ -787,9 +787,9 @@ function playBgm(){
   if (p && p.catch) p.catch(()=>{});
   let v = 0;
   const fade = setInterval(()=>{
-    v += 0.045;
-    try{ bgmEl.volume = Math.min(0.52, v); }catch(e){}
-    if (v >= 0.52) clearInterval(fade);
+    v += 0.04;
+    try{ bgmEl.volume = Math.min(0.36, v); }catch(e){}
+    if (v >= 0.36) clearInterval(fade);
   }, 200);
 }
 
@@ -819,7 +819,7 @@ muteBtn.addEventListener('click', (ev)=>{
   applyMuteLevel();
   if (!muted){
     if (!musicStarted){ musicStarted = true; startAmbient(); loadBgm(); }
-    blip(740, 0.16, 'sine', 0.1);
+    blip(740, 0.16, 'sine', 0.18);
   }
 });
 
@@ -834,13 +834,13 @@ window.addEventListener('pointerdown', ()=>{
     }
   }catch(e){}
   if (phase === 'merge'){
-    blip(240, 0.22, 'triangle', 0.1);
-    blip(680, 0.30, 'sine', 0.06);
+    blip(240, 0.22, 'triangle', 0.18);
+    blip(680, 0.30, 'sine', 0.10);
     enterTalk();
   } else if (phase === 'talk' || phase === 'ending'){
-    blip(920, 0.075, 'sine', 0.055);
+    blip(920, 0.075, 'sine', 0.16);
   } else {
-    blip(600, 0.06, 'sine', 0.04);
+    blip(600, 0.06, 'sine', 0.12);
   }
 }, { passive: true });
 
