@@ -255,22 +255,23 @@
 
   /* 结尾页小游戏入口：fixed 右下角，不参与 ending 布局 */
   .ending-games{
-    position:fixed;right:2.5vh;bottom:2.5vh;z-index:45;
+    position:fixed;right:3vh;bottom:3vh;z-index:45;
     display:flex;flex-direction:row;gap:1.2vh;flex-wrap:wrap;justify-content:flex-end;
     opacity:0;pointer-events:none;transition:opacity .4s ease;
   }
   .ending-games.show{opacity:1;pointer-events:auto;}
   /* rotd 下（横屏）按钮竖排在右侧中间，不挡内容 */
   body.rotd .ending-games{
-    flex-direction:column;right:1.5vh;bottom:auto;top:50%;transform:translateY(-50%);
-    gap:1vh;align-items:flex-end;
+    flex-direction:column;right:4vh;bottom:auto;top:50%;transform:translateY(-50%);
+    gap:1.2vh;align-items:flex-end;
   }
   .ending-games button{
-    padding:0.7vh 1.6vh;border-radius:999px;cursor:pointer;
-    background:rgba(95,227,220,.10);color:#b8f0ec;
-    border:1px solid rgba(95,227,220,.45);font-size:clamp(10px,1.9vh,13px);
+    padding:0.8vh 1.8vh;border-radius:999px;cursor:pointer;
+    background:rgba(255,168,203,.25);color:#ffe0f0;
+    border:1px solid rgba(255,168,203,.6);font-size:clamp(11px,2vh,14px);
     font-family:inherit;letter-spacing:.05em;transition:.2s;
     -webkit-tap-highlight-color:transparent;white-space:nowrap;
+    box-shadow:0 4px 16px rgba(255,168,203,.2);
   }
   .ending-games button:active{transform:scale(.96);background:rgba(95,227,220,.22);}
 
