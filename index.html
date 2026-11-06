@@ -1969,14 +1969,23 @@ function closeAllGames(){
   gameTarotEl.classList.add('hidden');
   fingerX = null;
   endingGamesEl.classList.remove('show');
-  // 恢复主页面横屏（如果还在 ending 阶段）
-  if (phase === 'ending'){
-    const portrait = window.matchMedia('(orientation:portrait)').matches;
-    if (portrait) document.body.classList.add('rotd');
-  }
+}
+
+/* 打开游戏前：移除 body.rotd，让游戏层自己旋转 */
+function enterGame(){
+  document.body.classList.remove('rotd');
 }
 document.querySelectorAll('[data-close]').forEach(btn=>{
-  btn.addEventListener('click', (e)=>{ e.stopPropagation(); closeAllGames(); });
+  btn.addEventListener('click', (e)=>{
+    e.stopPropagation();
+    closeAllGames();
+    // 恢复主页面横屏 + 显示入口按钮
+    if (phase === 'ending'){
+      const portrait = window.matchMedia('(orientation:portrait)').matches;
+      if (portrait) document.body.classList.add('rotd');
+      endingGamesEl.classList.add('show');
+    }
+  });
 });
 
 /* 游戏层自己在 portrait 下旋转了 90°，所以用 portrait 判定而不是 body.rotd */
@@ -2016,7 +2025,7 @@ function drawStar(ctx, x, y, r){
 openStarsBtn.addEventListener('click', (e)=>{
   e.stopPropagation();
   closeAllGames();
-  document.body.classList.remove('rotd');  // 主页面取消旋转，游戏层自己转
+  enterGame();  // 移除 rotd，游戏层自己旋转
   gameStarsEl.classList.remove('hidden');
   requestAnimationFrame(()=> gameStarsEl.classList.add('show'));
   resizeStars();
@@ -2216,7 +2225,7 @@ let lastTarotIdx = -1;
 openTarotBtn.addEventListener('click', (e)=>{
   e.stopPropagation();
   closeAllGames();
-  document.body.classList.remove('rotd');  // 主页面取消旋转，游戏层自己转
+  enterGame();  // 移除 rotd，游戏层自己旋转
   gameTarotEl.classList.remove('hidden');
   requestAnimationFrame(()=> gameTarotEl.classList.add('show'));
   tarotCard.classList.remove('flipped');
