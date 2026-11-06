@@ -22,7 +22,7 @@
     overscroll-behavior:none;
     -webkit-user-select:none;user-select:none;
   }
-  #space{position:fixed;inset:0;z-index:0;display:block;}
+  #space{position:fixed;inset:0;width:100%;height:100%;display:block;z-index:0;}
   .layer{position:fixed;inset:0;}
 
   /* ============ 第一幕：横屏提示（完整停留 2 秒后自动进入，无需点击） ============ */
@@ -174,6 +174,16 @@
   .gline{margin:0;font-size:clamp(11.5px,3.3vw,14px);line-height:1.62;color:#D9E9EE;letter-spacing:.02em;}
   .gline + .gline{margin-top:3px;}
   .ending-foot{margin-top:2px;font-size:10px;letter-spacing:.18em;color:rgba(143,166,178,.55);text-align:right;}
+
+  /* ============ 竖屏时：碰撞舞台强制为 16:9 横屏画幅（居中等高，上下留黑） ============ */
+  @media (orientation:portrait){
+    #space.framed{
+      top:50%;bottom:auto;left:0;right:0;
+      width:100vw;height:56.25vw;
+      transform:translateY(-50%);
+      box-shadow:0 0 0 1px rgba(95,227,220,.10), 0 0 52px rgba(95,227,220,.10);
+    }
+  }
 
   /* ============ 横屏 / 宽屏 ============ */
   @media (orientation:landscape), (min-aspect-ratio:1/1){
@@ -571,6 +581,7 @@ function tickPhases(t){
     talkEl.classList.remove('hidden');
     requestAnimationFrame(()=> talkEl.classList.add('show'));
     beginTalk();
+    updateFrame();
   }
 
   shake *= 0.90;
@@ -1284,6 +1295,7 @@ function restart(){
   phase = 'fly'; phaseT0 = nowMs();
   talkEl.classList.add('hidden');
   talkEl.classList.remove('show');
+  updateFrame();
 }
 
 /* =========================================================
@@ -1291,14 +1303,23 @@ function restart(){
    ========================================================= */
 function resize(){
   DPR = Math.min(window.devicePixelRatio || 1, 2);
-  W = window.innerWidth;
-  H = window.innerHeight;
+  const rect = space.getBoundingClientRect();
+  W = Math.max(1, Math.round(rect.width || window.innerWidth));
+  H = Math.max(1, Math.round(rect.height || window.innerHeight));
   space.width = Math.round(W * DPR);
   space.height = Math.round(H * DPR);
   sctx.setTransform(DPR, 0, 0, DPR, 0, 0);
   buildStars();
   buildNebula();
   resetPlanetPositions();
+}
+
+/* 竖屏时把碰撞幕收进 16:9 横屏画幅，进入对话后恢复全屏星空 */
+function updateFrame(){
+  const portrait = window.matchMedia('(orientation:portrait)').matches;
+  const opening = (phase === 'hint' || phase === 'fly' || phase === 'boom');
+  space.classList.toggle('framed', portrait && opening);
+  resize();
 }
 
 function endingPose(t){
@@ -1335,10 +1356,10 @@ function loop(t){
 /* =========================================================
    10. 启动
    ========================================================= */
-window.addEventListener('resize', ()=> resize());
-window.addEventListener('orientationchange', ()=> setTimeout(resize, 220));
+window.addEventListener('resize', ()=> updateFrame());
+window.addEventListener('orientationchange', ()=> setTimeout(updateFrame, 220));
 
-resize();
+updateFrame();
 phaseT0 = nowMs();
 requestAnimationFrame(loop);
 
