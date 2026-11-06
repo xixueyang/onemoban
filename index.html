@@ -516,6 +516,7 @@
   </div>
 </section>
 
+<!-- 留言浮层已改为直接跳转链接
 <section id="msgLayer" class="layer hidden">
   <div class="msg-wrap">
     <div class="msg-head">
@@ -525,6 +526,7 @@
     <iframe src="https://kp5j1yyw.jsjform.com/f/jBFsNv" frameborder="0" allow="microphone"></iframe>
   </div>
 </section>
+-->
 
 <script>
 (function(){
@@ -2292,9 +2294,7 @@ openTarotBtn.addEventListener('click', (e)=>{
 
 openMsgBtn.addEventListener('click', (e)=>{
   e.stopPropagation();
-  closeAllGames();
-  enterGame();
-  msgLayerEl.classList.remove('hidden');
+  window.open('https://kp5j1yyw.jsjform.com/f/jBFsNv', '_blank');
 });
 
 tarotDrawBtn.addEventListener('click', (e)=>{
