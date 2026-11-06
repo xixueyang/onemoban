@@ -638,7 +638,7 @@ function enterTalk(){
 }
 
 /* ===== 背景音乐 & 点击音效 ===== */
-let actx = null, muted = false, bgmStarted = false, bgmIdx = 0;
+let actx = null, muted = false, musicStarted = false, bgmIdx = 0;
 const bgmEl = document.getElementById('bgm');
 const muteBtn = document.getElementById('muteBtn');
 const BGM_LIST = ['music/faruxue.mp3', 'music/发如雪.mp3', 'music/bgm.mp3', 'bgm.mp3'];
@@ -666,6 +666,120 @@ function blip(freq, dur, type, vol){
   }catch(e){}
 }
 
+/* ===== 无版权氛围纯音乐（WebAudio 实时合成，可无限循环） ===== */
+let ambient = null;
+const PENTA = [261.63, 293.66, 329.63, 392.0, 440.0, 523.25, 587.33, 659.25];
+const PAD_FREQS = [130.81, 164.81, 196.0, 261.63];
+
+function makeImpulse(dur, decay){
+  const rate = actx.sampleRate;
+  const len = Math.floor(rate * dur);
+  const buf = actx.createBuffer(1, len, rate);
+  const d = buf.getChannelData(0);
+  for (let i = 0; i < len; i++){
+    const x = 1 - i / len;
+    d[i] = (Math.random() * 2 - 1) * Math.pow(x, decay);
+  }
+  return buf;
+}
+
+function startAmbient(){
+  if (ambient || !actx) return;
+  const ctx = actx;
+  const master = ctx.createGain();
+  master.gain.setValueAtTime(0, ctx.currentTime);
+  master.gain.linearRampToValueAtTime(muted ? 0 : 0.30, ctx.currentTime + 7);
+  master.connect(ctx.destination);
+
+  const conv = ctx.createConvolver();
+  conv.buffer = makeImpulse(3.6, 1.35);
+  const wet = ctx.createGain();
+  wet.gain.value = 0.45;
+  conv.connect(wet);
+  wet.connect(master);
+
+  const padGain = ctx.createGain();
+  padGain.gain.value = 0.40;
+  padGain.connect(master);
+  padGain.connect(conv);
+
+  const nodes = [];
+  PAD_FREQS.forEach((f, i) => {
+    const o = ctx.createOscillator();
+    o.type = 'sine';
+    o.frequency.value = f + (i === 3 ? -0.7 : 0.5);
+    const g = ctx.createGain();
+    g.gain.value = i === 3 ? 0.05 : 0.08;
+    const lfo = ctx.createOscillator();
+    lfo.type = 'sine';
+    lfo.frequency.value = 0.06 + i * 0.017;
+    const lfoG = ctx.createGain();
+    lfoG.gain.value = 0.028;
+    lfo.connect(lfoG);
+    lfoG.connect(g.gain);
+    o.connect(g);
+    g.connect(padGain);
+    o.start();
+    lfo.start();
+    nodes.push(o, lfo);
+  });
+
+  const a = { master, conv, padGain, nodes, noteTimer: null, stopped: false };
+  ambient = a;
+
+  function pluck(f, vel){
+    if (a.stopped) return;
+    const o = ctx.createOscillator();
+    o.type = 'sine';
+    o.frequency.value = f;
+    const g = ctx.createGain();
+    const t0 = ctx.currentTime;
+    g.gain.setValueAtTime(0.0001, t0);
+    g.gain.linearRampToValueAtTime(vel, t0 + 0.035);
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.9);
+    o.connect(g);
+    g.connect(master);
+    g.connect(conv);
+    o.start(t0);
+    o.stop(t0 + 1.0);
+  }
+
+  function loopNotes(){
+    if (a.stopped) return;
+    const f = PENTA[Math.floor(Math.random() * PENTA.length)];
+    pluck(f, 0.026 + Math.random() * 0.026);
+    if (Math.random() < 0.22) pluck(f * 1.498, 0.011);
+    a.noteTimer = setTimeout(loopNotes, 640 + Math.random() * 780);
+  }
+  a.noteTimer = setTimeout(loopNotes, 700);
+}
+
+function stopAmbient(){
+  if (!ambient) return;
+  const a = ambient;
+  ambient = null;
+  a.stopped = true;
+  clearTimeout(a.noteTimer);
+  try{
+    a.master.gain.cancelScheduledValues(actx.currentTime);
+    a.master.gain.setValueAtTime(a.master.gain.value, actx.currentTime);
+    a.master.gain.linearRampToValueAtTime(0, actx.currentTime + 1.1);
+  }catch(e){}
+  setTimeout(() => {
+    a.nodes.forEach(n => { try{ n.stop(); }catch(e){} });
+  }, 1300);
+}
+
+function applyMuteLevel(){
+  if (actx && ambient){
+    try{
+      ambient.master.gain.cancelScheduledValues(actx.currentTime);
+      ambient.master.gain.setValueAtTime(ambient.master.gain.value, actx.currentTime);
+      ambient.master.gain.linearRampToValueAtTime(muted ? 0 : 0.30, actx.currentTime + 0.7);
+    }catch(e){}
+  }
+}
+
 function playBgm(){
   if (muted) return;
   try{ bgmEl.muted = false; bgmEl.volume = 0; }catch(e){}
@@ -686,6 +800,11 @@ function loadBgm(){
   playBgm();
 }
 
+bgmEl.addEventListener('canplay', ()=>{
+  stopAmbient();
+  playBgm();
+});
+
 bgmEl.addEventListener('error', ()=>{
   bgmIdx++;
   if (bgmIdx < BGM_LIST.length) loadBgm();
@@ -697,16 +816,23 @@ muteBtn.addEventListener('click', (ev)=>{
   muteBtn.classList.toggle('off', muted);
   muteBtn.classList.toggle('on', !muted);
   try{ bgmEl.muted = muted; }catch(e){}
+  applyMuteLevel();
   if (!muted){
-    if (!bgmStarted){ bgmStarted = true; loadBgm(); }
-    else playBgm();
+    if (!musicStarted){ musicStarted = true; startAmbient(); loadBgm(); }
     blip(740, 0.16, 'sine', 0.1);
   }
 });
 
 window.addEventListener('pointerdown', ()=>{
   initAudio();
-  if (!bgmStarted){ bgmStarted = true; loadBgm(); muteBtn.classList.add('on'); }
+  try{
+    if (!musicStarted){
+      musicStarted = true;
+      startAmbient();
+      loadBgm();
+      muteBtn.classList.add('on');
+    }
+  }catch(e){}
   if (phase === 'merge'){
     blip(240, 0.22, 'triangle', 0.1);
     blip(680, 0.30, 'sine', 0.06);
