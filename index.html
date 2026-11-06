@@ -819,7 +819,7 @@ muteBtn.addEventListener('click', (ev)=>{
   applyMuteLevel();
   if (!muted){
     if (!musicStarted){ musicStarted = true; startAmbient(); loadBgm(); }
-    blip(740, 0.16, 'sine', 0.18);
+    blip(740, 0.16, 'sine', 0.24);
   }
 });
 
@@ -834,13 +834,13 @@ window.addEventListener('pointerdown', ()=>{
     }
   }catch(e){}
   if (phase === 'merge'){
-    blip(240, 0.22, 'triangle', 0.18);
-    blip(680, 0.30, 'sine', 0.10);
+    blip(240, 0.22, 'triangle', 0.28);
+    blip(680, 0.30, 'sine', 0.16);
     enterTalk();
   } else if (phase === 'talk' || phase === 'ending'){
-    blip(920, 0.075, 'sine', 0.16);
+    blip(920, 0.075, 'sine', 0.24);
   } else {
-    blip(600, 0.06, 'sine', 0.12);
+    blip(600, 0.06, 'sine', 0.20);
   }
 }, { passive: true });
 
