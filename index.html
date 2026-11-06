@@ -253,10 +253,16 @@
   @keyframes pulseMusic{0%,100%{box-shadow:0 0 0 0 rgba(95,227,220,.28);}50%{box-shadow:0 0 0 7px rgba(95,227,220,0);}}
   body.rotd #muteBtn{top:2.4vh;left:2.4vh;right:auto;}
 
-  /* 结尾页小游戏入口：浮动在右下角，不占自我介绍文档流 */
+  /* 结尾页小游戏入口：fixed 右下角，不参与 ending 布局 */
   .ending-games{
-    position:absolute;right:2.2vh;bottom:2.2vh;z-index:5;
-    display:flex;gap:1.2vw;flex-wrap:wrap;justify-content:flex-end;
+    position:fixed;right:2.5vh;bottom:2.5vh;z-index:45;
+    display:flex;flex-direction:row;gap:1.2vw;flex-wrap:wrap;justify-content:flex-end;
+    opacity:0;pointer-events:none;transition:opacity .4s ease;
+  }
+  .ending-games.show{opacity:1;pointer-events:auto;}
+  /* rotd 下（横屏）按钮竖排在右侧，不挡内容 */
+  body.rotd .ending-games{
+    flex-direction:column;right:2vh;bottom:auto;top:50%;transform:translateY(-50%);
   }
   .ending-games button{
     padding:0.7vw 1.6vw;border-radius:999px;cursor:pointer;
@@ -360,7 +366,14 @@
     font-size:clamp(10px,2.6vw,13px);font-family:inherit;letter-spacing:.1em;
   }
   .tarot-btns button:active{transform:scale(.96);}
-  /* 游戏层是 body 子元素，body.rotd 时自动跟随旋转，不需要再单独旋转 */
+  /* 游戏层自己接管旋转：打开时 body 移除 rotd，游戏层在 portrait 下自己转 90° */
+  @media (orientation:portrait){
+    #gameStars, #gameTarot{
+      position:fixed;top:0;left:100%;right:auto;bottom:auto;
+      width:100vh;height:100vw;
+      transform-origin:left top;transform:rotate(90deg);
+    }
+  }
 </style>
 </head>
 <body>
@@ -411,11 +424,13 @@
     <div class="groups" id="groups"></div>
     <div class="ending-foot">THE END · 很高兴遇见你</div>
   </div>
-  <div class="ending-games">
-    <button id="openStars">🌠 捡星星</button>
-    <button id="openTarot">🔮 今日塔罗</button>
-  </div>
 </section>
+
+<!-- 游戏入口：fixed 定位，不参与 ending 布局，浮在右下角 -->
+<div class="ending-games" id="endingGames">
+  <button id="openStars">🌠 捡星星</button>
+  <button id="openTarot">🔮 今日塔罗</button>
+</div>
 
 <section id="gameStars" class="layer hidden">
   <canvas id="starsCv"></canvas>
@@ -798,32 +813,58 @@ const bgmEl = document.getElementById('bgm');
 const muteBtn = document.getElementById('muteBtn');
 const BGM_LIST = ['music/faruxue.mp3', 'music/发如雪.mp3', 'music/bgm.mp3', 'bgm.mp3'];
 
-/* 页面一加载就预加载 + 尝试自动播放（muted 自动播是浏览器允许的，播起来后立即尝试取消静音） */
+/* 页面一加载就预加载 + 尝试自动播放（多策略兜底） */
 (function preloadBgm(){
   try{
     bgmEl.src = BGM_LIST[0];
     bgmEl.preload = 'auto';
+    bgmEl.muted = false;
+
+    function startMusic(){
+      if (musicStarted) return;
+      musicStarted = true;
+      muteBtn.classList.add('on');
+      playBgm();
+    }
+
+    /* 策略1：普通浏览器 muted autoplay → play 事件后 unmute */
     bgmEl.muted = true;
-    bgmEl.play().catch(()=>{});
-    /* 一旦开始播放，立即尝试取消静音并淡入到正常音量 */
-    bgmEl.addEventListener('play', ()=>{
-      setTimeout(()=>{ try{ bgmEl.muted = false; }catch(e){} }, 50);
+    bgmEl.play().then(()=>{
+      /* muted 播起来了，尝试 unmute */
+      setTimeout(()=>{ try{ bgmEl.muted = false; }catch(e){} }, 80);
+      startMusic();
+    }).catch(()=>{});
+
+    /* 策略2：音频 canplay 后再尝试一次（文件加载完了） */
+    bgmEl.addEventListener('canplay', ()=>{
       if (!musicStarted){
-        musicStarted = true;
-        playBgm();
-        muteBtn.classList.add('on');
+        bgmEl.muted = false;
+        bgmEl.play().then(startMusic).catch(()=>{});
       }
     });
-    /* 微信内置浏览器：WeixinJSBridgeReady 时直接播放（微信允许这个时机自动出声） */
+
+    /* 策略3：微信内置浏览器 WeixinJSBridgeReady 时直接 play */
     document.addEventListener('WeixinJSBridgeReady', ()=>{
       try{
         bgmEl.muted = false;
-        bgmEl.play().catch(()=>{});
-        musicStarted = true;
-        muteBtn.classList.add('on');
-        playBgm();
+        if (bgmEl.readyState >= 2){
+          bgmEl.play().then(startMusic).catch(()=>{});
+        } else {
+          bgmEl.addEventListener('canplay', ()=>{
+            bgmEl.play().then(startMusic).catch(()=>{});
+          }, { once:true });
+        }
       }catch(e){}
     }, false);
+
+    /* 策略4：第一次触摸时兜底 */
+    window.addEventListener('pointerdown', function once(){
+      if (!musicStarted){
+        bgmEl.muted = false;
+        bgmEl.play().then(startMusic).catch(()=>{});
+      }
+      window.removeEventListener('pointerdown', once);
+    });
   }catch(e){}
 })();
 
@@ -1795,8 +1836,10 @@ function buildEnding(){
   });
 }
 
+const endingGamesEl = document.getElementById('endingGames');
 function showEnding(){
   talkActive = false;
+  endingGamesEl.classList.add('show');
   clearInterval(typingTimer);
   buildEnding();
   talkEl.classList.remove('show');
@@ -1934,6 +1977,12 @@ function closeAllGames(){
   gameStarsEl.classList.add('hidden');
   gameTarotEl.classList.add('hidden');
   fingerX = null;
+  endingGamesEl.classList.remove('show');
+  // 恢复主页面横屏（如果还在 ending 阶段）
+  if (phase === 'ending'){
+    const portrait = window.matchMedia('(orientation:portrait)').matches;
+    if (portrait) document.body.classList.add('rotd');
+  }
 }
 document.querySelectorAll('[data-close]').forEach(btn=>{
   btn.addEventListener('click', (e)=>{ e.stopPropagation(); closeAllGames(); });
@@ -1976,6 +2025,7 @@ function drawStar(ctx, x, y, r){
 openStarsBtn.addEventListener('click', (e)=>{
   e.stopPropagation();
   closeAllGames();
+  document.body.classList.remove('rotd');  // 主页面取消旋转，游戏层自己转
   gameStarsEl.classList.remove('hidden');
   requestAnimationFrame(()=> gameStarsEl.classList.add('show'));
   resizeStars();
@@ -2175,6 +2225,7 @@ let lastTarotIdx = -1;
 openTarotBtn.addEventListener('click', (e)=>{
   e.stopPropagation();
   closeAllGames();
+  document.body.classList.remove('rotd');  // 主页面取消旋转，游戏层自己转
   gameTarotEl.classList.remove('hidden');
   requestAnimationFrame(()=> gameTarotEl.classList.add('show'));
   tarotCard.classList.remove('flipped');
