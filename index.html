@@ -1930,6 +1930,7 @@ function restart(){
   phase = 'fly'; phaseT0 = nowMs();
   talkEl.classList.add('hidden');
   talkEl.classList.remove('show');
+  endingGamesEl.classList.remove('show');  // 隐藏游戏按钮
   applyOrientation();
 }
 
