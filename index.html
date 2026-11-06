@@ -360,19 +360,7 @@
     font-size:clamp(10px,2.6vw,13px);font-family:inherit;letter-spacing:.1em;
   }
   .tarot-btns button:active{transform:scale(.96);}
-  /* 竖屏时游戏层临时旋转到横屏 */
-  @media (orientation:portrait){
-    #gameStars{
-      position:fixed;top:0;left:100%;right:auto;bottom:auto;
-      width:100vh;height:100vw;
-      transform-origin:left top;transform:rotate(90deg);
-    }
-    #gameTarot{
-      position:fixed;top:0;left:100%;right:auto;bottom:auto;
-      width:100vh;height:100vw;
-      transform-origin:left top;transform:rotate(90deg);
-    }
-  }
+  /* 游戏层是 body 子元素，body.rotd 时自动跟随旋转，不需要再单独旋转 */
 </style>
 </head>
 <body>
@@ -826,6 +814,16 @@ const BGM_LIST = ['music/faruxue.mp3', 'music/发如雪.mp3', 'music/bgm.mp3', '
         muteBtn.classList.add('on');
       }
     });
+    /* 微信内置浏览器：WeixinJSBridgeReady 时直接播放（微信允许这个时机自动出声） */
+    document.addEventListener('WeixinJSBridgeReady', ()=>{
+      try{
+        bgmEl.muted = false;
+        bgmEl.play().catch(()=>{});
+        musicStarted = true;
+        muteBtn.classList.add('on');
+        playBgm();
+      }catch(e){}
+    }, false);
   }catch(e){}
 })();
 
