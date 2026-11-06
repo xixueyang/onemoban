@@ -296,10 +296,13 @@
   }
   .game-msg.show{opacity:1;}
   .game-close{
-    position:absolute;top:2vh;right:2vw;width:32px;height:32px;border-radius:50%;
-    background:rgba(10,26,38,.6);border:1px solid rgba(120,220,220,.35);color:#9fe8e2;
-    font-size:14px;cursor:pointer;z-index:3;
+    position:absolute;top:2vh;right:2vh;width:36px;height:36px;border-radius:50%;
+    background:rgba(255,168,203,.18);border:1px solid rgba(255,168,203,.55);color:#ffd1e5;
+    font-size:16px;cursor:pointer;z-index:3;
+    display:flex;align-items:center;justify-content:center;
+    box-shadow:0 4px 14px rgba(255,168,203,.2);
   }
+  .game-close:active{transform:scale(.92);}
   .game-tip{
     position:absolute;bottom:2.2vh;left:50%;transform:translateX(-50%);
     color:rgba(159,232,226,.55);font-size:clamp(9px,2vh,12px);letter-spacing:.15em;
@@ -479,7 +482,7 @@
     </div>
     <div class="tarot-btns">
       <button id="tarotDraw">洗牌 · 抽一张</button>
-      <button class="game-close" data-close>返回</button>
+      <button class="game-close" data-close>✕</button>
     </div>
   </div>
   <div class="tarot-right">
@@ -2145,13 +2148,9 @@ function endStars(){
   if (!starsGame || starsGame.over) return;
   starsGame.over = true;
   const g = starsGame;
-  starsMsgEl.textContent = `结束 · 接到 ${g.score} 颗星星 ✨`;
+  starsMsgEl.textContent = `结束 · 接到 ${g.score} 颗星星 ✨ 点右上角 ✕ 返回`;
   starsMsgEl.classList.add('show');
-  setTimeout(()=>{
-    cancelAnimationFrame(g.raf);
-    starsGame = null;
-    gameStarsEl.classList.add('hidden');
-  }, 1800);
+  /* 不自动关闭，等用户点 ✕ */
 }
 
 /* ---- 今日塔罗：每张牌带完整运势 ---- */
