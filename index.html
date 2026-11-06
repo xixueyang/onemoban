@@ -204,13 +204,14 @@
       padding:2vw 3vh;
     }
     body.rotd .ending-left{height:auto;align-items:center;}
-    body.rotd #charEnd{width:min(26vh,210px);}
-    body.rotd .ending-right{width:min(66vh,780px);max-width:none;gap:1.2vw;}
-    body.rotd .ending-title{font-size:clamp(13px,3.2vw,18px);}
-    body.rotd .groups{grid-template-columns:repeat(2,minmax(0,1fr));gap:1vw;}
-    body.rotd .gline{font-size:clamp(10.5px,2.8vw,13.5px);line-height:1.5;}
-    body.rotd .group{padding:1.6vw 1.8vw;}
-    body.rotd .gtitle{font-size:clamp(9px,2.4vw,11px);margin-bottom:2px;}
+    body.rotd #charEnd{width:min(22vh,180px);}
+    body.rotd .ending-right{width:min(70vh,790px);max-width:none;gap:1vw;}
+    body.rotd .ending-title{font-size:clamp(13px,3vw,17px);}
+    body.rotd .groups{grid-template-columns:repeat(3,minmax(0,1fr));gap:0.8vw;}
+    body.rotd .gline{font-size:clamp(9.5px,2.35vw,12px);line-height:1.42;}
+    body.rotd .group{padding:1.3vw 1.4vw;}
+    body.rotd .gtitle{font-size:clamp(8.5px,2.2vw,10px);margin-bottom:2px;}
+    body.rotd .ending-foot{font-size:clamp(8px,2vw,10px);}
   }
 
   /* ============ 横屏 / 宽屏 ============ */
@@ -546,12 +547,89 @@ function updateBoom(dt, cx, cy){
   }
 }
 
+/* ===== 碰撞后融合成的点阵巨行星（青+粉双色、条带状） ===== */
+let mergeBall = null;
+let mergeT0 = 0;
+
+function startMerge(t){
+  mergeBall = {
+    R: planets[0].R * 1.62,
+    rot: 0,
+    pts: makeDotSphere(940)
+  };
+  mergeT0 = t;
+}
+
+function drawMergeBall(t){
+  if (!mergeBall) return;
+  const m = mergeBall;
+  const grow = clamp((t - mergeT0) / MERGE_GROW_MS, 0, 1);
+  const R = m.R * (0.5 + 0.5 * easeInOut(grow));
+  m.rot += 0.0015;
+
+  const cx = collisionX, cy = collisionY;
+
+  const g = sctx.createRadialGradient(cx, cy, R*0.55, cx, cy, R*2.05);
+  g.addColorStop(0, 'rgba(160,240,235,0.22)');
+  g.addColorStop(0.42, 'rgba(190,145,220,0.11)');
+  g.addColorStop(1, 'rgba(255,120,200,0)');
+  sctx.fillStyle = g;
+  sctx.beginPath(); sctx.arc(cx, cy, R*2.05, 0, Math.PI*2); sctx.fill();
+
+  const cosR = Math.cos(m.rot), sinR = Math.sin(m.rot);
+  for (const p of m.pts){
+    const rx = p.x*cosR - p.z*sinR;
+    const rz = p.x*sinR + p.z*cosR;
+    const depth = (rz + 1) / 2;
+    const sx = cx + rx * R;
+    const sy = cy + p.y * R;
+
+    const bandPhase = Math.sin(p.y * 6.6 + Math.sin(m.rot * 0.8) * 0.6);
+    const density = Math.pow(clamp(0.5 + 0.5 * bandPhase, 0, 1), 1.5);
+    const mix = clamp(0.5 + 0.5 * Math.sin(p.y * 2.4 + 0.8), 0, 1);
+    const cr = Math.round(95 + (255 - 95) * mix);
+    const cg = Math.round(227 + (86 - 227) * mix);
+    const cb = Math.round(220 + (166 - 220) * mix);
+    const a = Math.max(0, (0.12 + depth * 0.88) * (0.18 + 0.82 * density) * (0.35 + 0.65*grow));
+    sctx.fillStyle = 'rgba(' + cr + ',' + cg + ',' + cb + ',' + a.toFixed(3) + ')';
+    const sz = (density > 0.55 && depth > 0.4) ? 2 : 1;
+    sctx.fillRect(Math.round(sx), Math.round(sy), sz, sz);
+  }
+
+  sctx.strokeStyle = 'rgba(225,250,255,' + (0.15 * grow).toFixed(3) + ')';
+  sctx.lineWidth = 1.2;
+  sctx.beginPath(); sctx.arc(cx, cy, R*0.995, 0, Math.PI*2); sctx.stroke();
+
+  if (phase === 'merge'){
+    const pulse = 0.5 + 0.5 * Math.sin(t * 0.004);
+    sctx.fillStyle = 'rgba(232,244,246,' + (0.45 + pulse*0.45).toFixed(3) + ')';
+    sctx.font = '13px "PingFang SC","Microsoft YaHei",sans-serif';
+    sctx.textAlign = 'center';
+    sctx.fillText('轻触星球 · 继续', cx, cy + R * 1.6);
+  }
+}
+
+function enterTalk(){
+  if (phase !== 'merge') return;
+  phase = 'talk'; phaseT0 = nowMs();
+  mergeBall = null;
+  talkEl.classList.remove('hidden');
+  requestAnimationFrame(()=> talkEl.classList.add('show'));
+  beginTalk();
+  applyOrientation();
+}
+
+window.addEventListener('pointerdown', ()=>{
+  if (phase === 'merge') enterTalk();
+}, { passive: true });
+
 /* =========================================================
    4. 阶段调度
    ========================================================= */
 const HINT_MS = 2000;   // 完整停留 2 秒
-const FLY_MS  = 1500;
-const BOOM_MS = 3000;   // 相撞爆炸场面全程 3 秒
+const FLY_MS  = 2200;   // 两颗星球从屏幕两侧慢慢靠近
+const BOOM_MS = 1500;   // 爆炸场面
+const MERGE_GROW_MS = 1300;  // 融合星球长成的时长
 
 let phase = 'hint';
 let phaseT0 = nowMs();
@@ -563,8 +641,9 @@ function resetPlanetPositions(){
   planets[0].R = R; planets[1].R = R;
   collisionX = W * 0.5;
   collisionY = H * 0.44;
-  planets[0].homeX = -R * 1.6; planets[0].homeY = collisionY;
-  planets[1].homeX = W + R * 1.6; planets[1].homeY = collisionY;
+  // 起点放在屏幕左右两侧边缘内侧，保证能看清两边一起靠近
+  planets[0].homeX = R * 0.72; planets[0].homeY = collisionY;
+  planets[1].homeX = W - R * 0.72; planets[1].homeY = collisionY;
   planets[0].cx = planets[0].homeX; planets[0].cy = planets[0].homeY;
   planets[1].cx = planets[1].homeX; planets[1].cy = planets[1].homeY;
 }
@@ -600,16 +679,13 @@ function tickPhases(t){
     if (p >= 1){
       phase = 'boom'; phaseT0 = t;
       startBoom(collisionX, collisionY);
+      startMerge(t);
       shake = 16;
     }
   }
 
   if (phase === 'boom' && el > BOOM_MS){
-    phase = 'talk'; phaseT0 = t;
-    talkEl.classList.remove('hidden');
-    requestAnimationFrame(()=> talkEl.classList.add('show'));
-    beginTalk();
-    applyOrientation();
+    phase = 'merge'; phaseT0 = t;
   }
 
   shake *= 0.90;
@@ -631,7 +707,12 @@ function tickPhases(t){
         drawScatterCloud(pl, t, k, dir);
       }
       updateBoom(16, collisionX, collisionY);
+      drawMergeBall(t);
     }
+  }
+
+  if (phase === 'merge'){
+    drawMergeBall(t);
   }
 }
 
@@ -1335,6 +1416,7 @@ endingEl.addEventListener('pointerdown', ()=>{
 function restart(){
   li = -1; typing = false; talkActive = false;
   clearInterval(typingTimer);
+  mergeBall = null;
   endingEl.classList.remove('show');
   setTimeout(()=> endingEl.classList.add('hidden'), 400);
   resetPlanetPositions();
