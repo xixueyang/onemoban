@@ -175,14 +175,42 @@
   .gline + .gline{margin-top:3px;}
   .ending-foot{margin-top:2px;font-size:10px;letter-spacing:.18em;color:rgba(143,166,178,.55);text-align:right;}
 
-  /* ============ 竖屏时：碰撞舞台强制为 16:9 横屏画幅（居中等高，上下留黑） ============ */
+  /* ============ 竖屏设备：开场提示之后整体旋转 90°，强制横屏占满全屏 ============ */
   @media (orientation:portrait){
-    #space.framed{
-      top:50%;bottom:auto;left:0;right:0;
-      width:100vw;height:56.25vw;
-      transform:translateY(-50%);
-      box-shadow:0 0 0 1px rgba(95,227,220,.10), 0 0 52px rgba(95,227,220,.10);
+    body.rotd{
+      position:fixed;top:0;left:100%;
+      width:100vh;height:100vw;
+      transform-origin:left top;
+      transform:rotate(90deg);
+      transition:transform .55s ease;
     }
+    /* 旋转后 body 的宽=屏高(844)、高=屏宽(390)：横向尺寸用 vh，纵向尺寸用 vw */
+    body.rotd #talk{
+      flex-direction:row;align-items:center;justify-content:center;
+      gap:2.4vh;
+      padding:2vw 3vh;
+    }
+    body.rotd #talk .char-wrap{width:auto;height:auto;flex:0 0 auto;align-items:center;}
+    body.rotd #char{width:min(30vh,255px);}
+    body.rotd #talk .bubble-wrap{width:min(52vh,520px);max-width:none;gap:1.4vw;}
+    body.rotd .bubble{min-height:0;padding:2vw 2.2vh;max-height:62vw;overflow:hidden;}
+    body.rotd .bubble .text{font-size:clamp(13px,3.3vw,17px);line-height:1.8;}
+    body.rotd .stage-tag{font-size:clamp(9.5px,2.5vw,11px);}
+    body.rotd .tap-hint{font-size:clamp(9px,2.4vw,11px);}
+    body.rotd .dots i{width:4px;height:4px;}
+    body.rotd #ending{
+      flex-direction:row;align-items:center;justify-content:center;
+      gap:3vh;
+      padding:2vw 3vh;
+    }
+    body.rotd .ending-left{height:auto;align-items:center;}
+    body.rotd #charEnd{width:min(26vh,210px);}
+    body.rotd .ending-right{width:min(66vh,780px);max-width:none;gap:1.2vw;}
+    body.rotd .ending-title{font-size:clamp(13px,3.2vw,18px);}
+    body.rotd .groups{grid-template-columns:repeat(2,minmax(0,1fr));gap:1vw;}
+    body.rotd .gline{font-size:clamp(10.5px,2.8vw,13.5px);line-height:1.5;}
+    body.rotd .group{padding:1.6vw 1.8vw;}
+    body.rotd .gtitle{font-size:clamp(9px,2.4vw,11px);margin-bottom:2px;}
   }
 
   /* ============ 横屏 / 宽屏 ============ */
@@ -541,7 +569,7 @@ function resetPlanetPositions(){
   planets[1].cx = planets[1].homeX; planets[1].cy = planets[1].homeY;
 }
 
-function goFly(){ phase = 'fly'; phaseT0 = nowMs(); }
+function goFly(){ phase = 'fly'; phaseT0 = nowMs(); applyOrientation(); }
 
 function tickPhases(t){
   const el = t - phaseT0;
@@ -581,7 +609,7 @@ function tickPhases(t){
     talkEl.classList.remove('hidden');
     requestAnimationFrame(()=> talkEl.classList.add('show'));
     beginTalk();
-    updateFrame();
+    applyOrientation();
   }
 
   shake *= 0.90;
@@ -1295,7 +1323,7 @@ function restart(){
   phase = 'fly'; phaseT0 = nowMs();
   talkEl.classList.add('hidden');
   talkEl.classList.remove('show');
-  updateFrame();
+  applyOrientation();
 }
 
 /* =========================================================
@@ -1303,9 +1331,8 @@ function restart(){
    ========================================================= */
 function resize(){
   DPR = Math.min(window.devicePixelRatio || 1, 2);
-  const rect = space.getBoundingClientRect();
-  W = Math.max(1, Math.round(rect.width || window.innerWidth));
-  H = Math.max(1, Math.round(rect.height || window.innerHeight));
+  W = Math.max(1, Math.round(space.offsetWidth || window.innerWidth));
+  H = Math.max(1, Math.round(space.offsetHeight || window.innerHeight));
   space.width = Math.round(W * DPR);
   space.height = Math.round(H * DPR);
   sctx.setTransform(DPR, 0, 0, DPR, 0, 0);
@@ -1314,11 +1341,11 @@ function resize(){
   resetPlanetPositions();
 }
 
-/* 竖屏时把碰撞幕收进 16:9 横屏画幅，进入对话后恢复全屏星空 */
-function updateFrame(){
+/* 竖屏设备：提示停留结束后把整个页面旋转 90°，强制横屏铺满；横屏设备保持原样 */
+function applyOrientation(){
   const portrait = window.matchMedia('(orientation:portrait)').matches;
-  const opening = (phase === 'hint' || phase === 'fly' || phase === 'boom');
-  space.classList.toggle('framed', portrait && opening);
+  const started = (phase !== 'hint');
+  document.body.classList.toggle('rotd', portrait && started);
   resize();
 }
 
@@ -1356,10 +1383,10 @@ function loop(t){
 /* =========================================================
    10. 启动
    ========================================================= */
-window.addEventListener('resize', ()=> updateFrame());
-window.addEventListener('orientationchange', ()=> setTimeout(updateFrame, 220));
+window.addEventListener('resize', ()=> applyOrientation());
+window.addEventListener('orientationchange', ()=> setTimeout(applyOrientation, 220));
 
-updateFrame();
+applyOrientation();
 phaseT0 = nowMs();
 requestAnimationFrame(loop);
 
