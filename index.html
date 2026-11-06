@@ -392,17 +392,15 @@
   .tarot-btns button:active{transform:scale(.96);}
   /* 留言浮层 */
   #msgLayer{
-    background:#050b14;align-items:center;justify-content:center;z-index:90;
+    background:#050b14;flex-direction:column;z-index:90;
   }
   .msg-wrap{
-    width:92vh;height:88vw;
+    flex:1;width:100%;height:100%;
     background:linear-gradient(160deg,#14263a,#1e1432);
-    border:1px solid rgba(255,220,180,.3);border-radius:18px;
     display:flex;flex-direction:column;overflow:hidden;
-    box-shadow:0 16px 48px rgba(0,0,0,.6), 0 0 40px rgba(255,220,180,.08);
   }
   .msg-head{
-    padding:1.4vw 2vh;color:#ffe9c8;font-size:clamp(13px,2.4vh,16px);letter-spacing:.25em;
+    padding:1.6vh 2.2vh;color:#ffe9c8;font-size:clamp(14px,2.6vh,17px);letter-spacing:.25em;
     display:flex;align-items:center;justify-content:space-between;
     border-bottom:1px solid rgba(255,220,180,.2);
     background:rgba(255,220,180,.05);flex-shrink:0;
@@ -411,7 +409,7 @@
 
   /* 游戏层自己接管旋转：打开时 body 移除 rotd，游戏层在 portrait 下自己转 90° */
   @media (orientation:portrait){
-    #gameStars, #gameTarot, #msgLayer{
+    #gameStars, #gameTarot{
       position:fixed;top:0;left:100%;right:auto;bottom:auto;
       width:100vh;height:100vw;
       transform-origin:left top;transform:rotate(90deg);
