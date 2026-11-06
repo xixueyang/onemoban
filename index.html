@@ -389,6 +389,22 @@
     box-shadow:0 4px 16px rgba(255,168,203,.15);
   }
   .tarot-btns button:active{transform:scale(.96);}
+  /* 留言浮层 */
+  #msgLayer{background:rgba(5,11,20,.92);align-items:center;justify-content:center;}
+  .msg-wrap{
+    width:min(92vh,600px);height:82vh;
+    background:linear-gradient(160deg,rgba(20,38,58,.9),rgba(30,20,50,.85));
+    border:1px solid rgba(255,220,180,.25);border-radius:16px;
+    display:flex;flex-direction:column;overflow:hidden;
+    box-shadow:0 12px 40px rgba(0,0,0,.5);
+  }
+  .msg-head{
+    padding:1.4vh 2vh;color:#ffe9c8;font-size:clamp(13px,2.4vh,16px);letter-spacing:.2em;
+    display:flex;align-items:center;justify-content:space-between;
+    border-bottom:1px solid rgba(255,220,180,.15);
+  }
+  .msg-wrap iframe{flex:1;width:100%;border:none;background:#fff;}
+
   /* 游戏层自己接管旋转：打开时 body 移除 rotd，游戏层在 portrait 下自己转 90° */
   @media (orientation:portrait){
     #gameStars, #gameTarot{
@@ -453,6 +469,7 @@
 <div class="ending-games" id="endingGames">
   <button id="openStars">🌠 捡星星</button>
   <button id="openTarot">🔮 今日塔罗</button>
+  <button id="openMsg">💌 给我留言</button>
 </div>
 
 <section id="gameStars" class="layer hidden">
@@ -494,6 +511,16 @@
       <div class="tarot-cell"><div class="k">🌸 人际</div><div class="v" id="tarotRelation">—</div></div>
       <div class="tarot-cell"><div class="k">✨ 小提示</div><div class="v" id="tarotTip">—</div></div>
     </div>
+  </div>
+</section>
+
+<section id="msgLayer" class="layer hidden">
+  <div class="msg-wrap">
+    <div class="msg-head">
+      <span>💌 给我留个言吧</span>
+      <button class="game-close" data-close>✕</button>
+    </div>
+    <iframe src="https://kp5j1yyw.jsjform.com/f/jBFsNv" frameborder="0" allow="microphone"></iframe>
   </div>
 </section>
 
@@ -1981,6 +2008,8 @@ const starsTimeEl = document.getElementById('starsTime');
 const starsMsgEl = document.getElementById('starsMsg');
 const openStarsBtn = document.getElementById('openStars');
 const openTarotBtn = document.getElementById('openTarot');
+const openMsgBtn = document.getElementById('openMsg');
+const msgLayerEl = document.getElementById('msgLayer');
 
 let starsGame = null;
 let fingerX = null;   // 手指在视觉坐标里的位置
@@ -2255,6 +2284,13 @@ openTarotBtn.addEventListener('click', (e)=>{
   tarotMood.textContent = '—';
   tarotRelation.textContent = '—';
   tarotTip.textContent = '—';
+});
+
+openMsgBtn.addEventListener('click', (e)=>{
+  e.stopPropagation();
+  closeAllGames();
+  enterGame();
+  msgLayerEl.classList.remove('hidden');
 });
 
 tarotDrawBtn.addEventListener('click', (e)=>{
